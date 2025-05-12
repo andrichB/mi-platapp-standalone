@@ -1,0 +1,13 @@
+#card-ingresos-egresos {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    padding: 16px;
+    flex-wrap: wrap;
+  
+    ion-card {
+      flex: 1 1 45%;
+      max-width: 300px;
+      margin: 0; // Elimina el margen por defecto de Ionic
+    }
+  }
