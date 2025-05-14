@@ -15,9 +15,10 @@ import {
   add, 
   trendingUp, 
   trendingDown, 
-  swapHorizontal 
-} from 'ionicons/icons';
+  swapHorizontal, logOut, settings } from 'ionicons/icons';
 import { OverlayEventDetail } from '@ionic/core';
+import { AuthService } from 'src/app/services/auth.service';
+import { ToastService } from 'src/app/services/toast.service';
 
 @Component({
   selector: 'app-home',
@@ -62,8 +63,12 @@ export class HomePage implements OnInit {
   message = '';
   isLoading = false;
 
-  constructor(private loadingController: LoadingController) {
-    addIcons({ add, trendingUp, trendingDown, swapHorizontal });
+  constructor(
+    private loadingController: LoadingController,
+    private authService: AuthService,
+    private toastService: ToastService
+  ) {
+    addIcons({settings,add,trendingUp,trendingDown,swapHorizontal,logOut});
   }
 
   ngOnInit() {}
@@ -79,6 +84,18 @@ export class HomePage implements OnInit {
       this.resetFormData(type);
     }
   }
+
+  //logout
+  logout() {
+  this.authService.logout().subscribe(() => {
+    // Mostrar un mensaje de éxito, por ejemplo usando un servicio de toast
+    this.toastService.showSuccess('Sesión cerrada correctamente');
+  }, error => {
+    // Manejar el error si no se puede cerrar sesión
+    this.toastService.showError('Error al cerrar sesión');
+    console.error(error);
+  });
+}
 
   // Procesar la transacción
   private async processTransaction(type: string) {

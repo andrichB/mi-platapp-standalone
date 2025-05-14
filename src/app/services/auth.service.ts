@@ -40,7 +40,7 @@ export class AuthService {
     return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
       map(() => {
         this.toastService.showSuccess('Registro exitoso!');
-        this.router.navigate(['/home']);
+        this.router.navigate(['/tabs/tabHome']);
       }),
       catchError((error) => {
         this.toastService.showError(this.getFirebaseErrorMessage(error.code));
