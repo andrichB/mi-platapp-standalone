@@ -13,6 +13,9 @@ import { environment } from './environments/environment';
 import { routes } from './app/app.routes';
 import { AppComponent } from './app/app.component';
 
+//Register
+import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+
 bootstrapApplication(AppComponent, {
   providers: [
     // Configuración de Ionic
@@ -25,5 +28,7 @@ bootstrapApplication(AppComponent, {
     // Configuración de Firebase
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
     provideAuth(() => getAuth()),
+    // Configuración de Firestore Register
+    provideFirestore(() => getFirestore())
   ],
 }).catch(err => console.error(err));
