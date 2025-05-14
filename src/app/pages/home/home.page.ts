@@ -1,197 +1,80 @@
 import { Component, ViewChild, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, IonHeader, IonTitle, IonToolbar,
-  IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
-  IonFab, IonFabButton, IonFabList, IonIcon,
-  IonModal, IonButtons, IonButton,
-  IonList, IonItem, IonInput,
-  IonSelect, IonSelectOption,
-  LoadingController
-} from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { 
-  add, 
-  trendingUp, 
-  trendingDown, 
-  swapHorizontal, settings, logOut, person } from 'ionicons/icons';
-import { OverlayEventDetail } from '@ionic/core';
-import { AuthService } from '../../services/auth.service'; // Asegúrate de que la ruta sea correcta
-import { ToastService } from '../../services/toast.service'; // Opcional pero recomendado
+import { IonModal, IonInput, IonSelect, IonSelectOption, IonButtons, IonButton } from '@ionic/angular';
+import { AuthService } from '../../services/auth.service'; 
+import { ToastService } from '../../services/toast.service';
+import { Firestore, collection, addDoc } from '@angular/fire/firestore';
+import { inject } from '@angular/core';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-home',
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
-  standalone: true,
-  imports: [
-    CommonModule, 
-    FormsModule,
-    IonContent, IonHeader, IonTitle, IonToolbar,
-    IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
-    IonFab, IonFabButton, IonFabList, IonIcon,
-    IonModal, IonButtons, IonButton,
-    IonList, IonItem, IonInput,
-    IonSelect, IonSelectOption
-  ]
 })
 export class HomePage implements OnInit {
-  // Referencias a los modales
-  @ViewChild('incomeModal') incomeModal!: IonModal;
-  @ViewChild('expenseModal') expenseModal!: IonModal;
-  @ViewChild('transferModal') transferModal!: IonModal;
-  
-  // Datos para los formularios
-  incomeData = {
-    amount: null as number | null,
-    description: ''
-  };
+  @ViewChild('categoryModal') categoryModal!: IonModal;
 
-  expenseData = {
-    amount: null as number | null,
-    category: 'food'
+  // Datos de las categorías personalizadas
+  customCategories$ = new BehaviorSubject<any[]>([]);  // Observable para las categorías
+  newCategory = {
+    name: '',
+    icon: '🍔',
+    color: '#FF5733'
   };
-
-  transferData = {
-    amount: null as number | null,
-    fromAccount: 'checking',
-    toAccount: 'savings'
-  };
-
-  // Mensajes y estado
-  message = '';
-  isLoading = false;
 
   constructor(
-    private loadingController: LoadingController,
+    private firestore: Firestore,
     private authService: AuthService,
     private toastService: ToastService
-  ) {
-    addIcons({person,add,trendingUp,trendingDown,swapHorizontal,settings,logOut});
+  ) {}
+
+  ngOnInit() {
+    this.loadCategories();
   }
 
-  ngOnInit() {}
-
-  // Manejar cierre del modal
-  async onWillDismiss(event: Event, type: string) {
-    const ev = event as CustomEvent<OverlayEventDetail<string>>;
-    
-    if (ev.detail.role === 'confirm') {
-      await this.processTransaction(type);
-    } else {
-      this.message = `${this.getTransactionTypeName(type)} cancelada`;
-      this.resetFormData(type);
+  // Cargar las categorías personalizadas del usuario
+  loadCategories() {
+    const user = this.authService.getCurrentUser();
+    if (user) {
+      const categoriasRef = collection(this.firestore, `categorias`);
+      // Filtro para las categorías del usuario actual
+      this.firestore.collection(categoriasRef, ref => ref.where('usuarioId', '==', user.uid))
+        .valueChanges().subscribe(categories => {
+          this.customCategories$.next(categories);
+        });
     }
   }
 
-  // Procesar la transacción
-  private async processTransaction(type: string) {
-    const loading = await this.loadingController.create({
-      message: 'Procesando...',
-      duration: 2000
-    });
-    
-    await loading.present();
+  // Abrir modal para agregar categoría
+  openCategoryModal() {
+    this.categoryModal.present();
+  }
 
+  // Crear nueva categoría
+  async createCategory() {
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
+
+    const categoriasRef = collection(this.firestore, 'categorias');
     try {
-      // Simulamos un tiempo de procesamiento
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Aquí iría tu lógica real para guardar los datos
-      switch(type) {
-        case 'income':
-          console.log('Ingreso guardado:', this.incomeData);
-          break;
-        case 'expense':
-          console.log('Egreso guardado:', this.expenseData);
-          break;
-        case 'transfer':
-          console.log('Transferencia guardada:', this.transferData);
-          break;
-      }
+      await addDoc(categoriasRef, {
+        usuarioId: user.uid,
+        nombre: this.newCategory.name,
+        icono: this.newCategory.icon,
+        color: this.newCategory.color
+      });
 
-      this.message = `${this.getTransactionTypeName(type)} guardada correctamente`;
-      this.resetFormData(type);
+      this.toastService.showSuccess('Categoría creada con éxito');
+      this.categoryModal.dismiss();
+      this.loadCategories();  // Recargar categorías
     } catch (error) {
-      this.message = `Error al guardar ${this.getTransactionTypeName(type)}`;
+      this.toastService.showError('Error al crear categoría');
       console.error(error);
-    } finally {
-      await loading.dismiss();
     }
   }
 
-  // Obtener nombre legible del tipo
-  private getTransactionTypeName(type: string): string {
-    switch(type) {
-      case 'income': return 'Ingreso';
-      case 'expense': return 'Egreso';
-      case 'transfer': return 'Transferencia';
-      default: return 'Transacción';
-    }
-  }
-
-  // Resetear datos del formulario
-  private resetFormData(type: string) {
-    switch(type) {
-      case 'income':
-        this.incomeData = { amount: null, description: '' };
-        break;
-      case 'expense':
-        this.expenseData = { amount: null, category: 'food' };
-        break;
-      case 'transfer':
-        this.transferData = { amount: null, fromAccount: 'checking', toAccount: 'savings' };
-        break;
-    }
-  }
-
-  // Cancelar acción
-  cancel(modalType: string) {
-    this.message = `${this.getTransactionTypeName(modalType)} cancelada`;
-    this.resetFormData(modalType);
-    
-    // Cierra el modal específico
-    switch(modalType) {
-      case 'income':
-        this.incomeModal.dismiss(null, 'cancel');
-        break;
-      case 'expense':
-        this.expenseModal.dismiss(null, 'cancel');
-        break;
-      case 'transfer':
-        this.transferModal.dismiss(null, 'cancel');
-        break;
-    }
-  }
-
-  // Confirmar acción (manejado por onWillDismiss)
-  confirm(type: string) {
-    // La lógica de confirmación ahora está en onWillDismiss
-    // Este método se mantiene para la plantilla HTML
-  }
-
-  // Validar formulario
-  isFormValid(type: string): boolean {
-    switch(type) {
-      case 'income':
-        return !!this.incomeData.amount && this.incomeData.amount > 0 && 
-               this.incomeData.description.trim().length > 0;
-      case 'expense':
-        return !!this.expenseData.amount && this.expenseData.amount > 0;
-      case 'transfer':
-        return !!this.transferData.amount && this.transferData.amount > 0 &&
-               this.transferData.fromAccount !== this.transferData.toAccount;
-      default:
-        return false;
-    }
-  }
-  logOut() {
-    this.authService.logout().subscribe(() => {
-      this.toastService.showSuccess('Sesión cerrada correctamente');
-    }, error => {
-      this.toastService.showError('Error al cerrar sesión');
-      console.error(error);
-    });
+  // Validar formulario de categoría
+  isCategoryFormValid(): boolean {
+    return this.newCategory.name.trim().length > 0;
   }
 }
