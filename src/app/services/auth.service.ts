@@ -54,7 +54,8 @@ export class AuthService {
 login(email: string, password: string): Observable<void> {
   return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
     tap(() => {
-      this.router.navigate(['/home']);
+      this.router.navigate(['/tabs/tabHome']);
+      this.toastService.showSuccess('Inicio de sesión exitoso!');
     }),
     map(() => {}), // Convertimos a Observable<void>
     catchError((error) => {
