@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import {
-  IonContent, IonHeader, IonTitle, IonToolbar,
+  IonContent,
   IonItem, IonInput, IonButton, IonIcon, IonText
 } from '@ionic/angular/standalone';
 import { personOutline, mailOutline, lockClosedOutline } from 'ionicons/icons';
@@ -17,7 +17,7 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./signup.page.scss'],
   standalone: true,
   imports: [
-    IonContent, IonHeader, IonTitle, IonToolbar,
+    IonContent,
     CommonModule, FormsModule, IonItem, IonInput,
     IonButton, IonIcon, IonText
   ]
@@ -55,7 +55,7 @@ export class SignupPage {
       return;
     }
 
-    this.authService.register(this.email, this.password).subscribe({
+    this.authService.register(this.email, this.password, this.name).subscribe({
       error: (err) => {
         console.error('Error en registro:', err);
       }

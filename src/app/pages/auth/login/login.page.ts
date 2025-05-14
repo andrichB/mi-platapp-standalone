@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
-  IonContent, IonHeader, IonTitle, IonToolbar,
+  IonContent,
   IonItem, IonInput, IonButton, IonText, IonIcon, IonSpinner 
 } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
@@ -23,7 +23,7 @@ import {
   imports: [
     CommonModule, 
     FormsModule,
-    IonContent, IonHeader, IonTitle, IonToolbar,
+    IonContent,
     IonItem, IonInput, IonButton, IonText, IonIcon, IonSpinner
   ]
 })

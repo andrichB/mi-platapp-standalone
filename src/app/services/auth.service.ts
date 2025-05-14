@@ -16,6 +16,7 @@ import { Observable, BehaviorSubject, from, catchError, map, throwError } from '
 import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { ToastService } from './toast.service';
+import { FirestoreService } from '../services/firestore.service';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +25,7 @@ export class AuthService {
   private auth = inject(Auth);
   private router = inject(Router);
   private toastService = inject(ToastService);
-  
+  private firestoreService = inject(FirestoreService);
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
@@ -36,18 +37,34 @@ export class AuthService {
   }
 
   // Registro con email y contraseña
-  register(email: string, password: string): Observable<void> {
-    return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
-      map(() => {
-        this.toastService.showSuccess('Registro exitoso!');
-        this.router.navigate(['/tabs/tabHome']);
-      }),
-      catchError((error) => {
-        this.toastService.showError(this.getFirebaseErrorMessage(error.code));
-        return throwError(() => error);
-      })
-    );
-  }
+  register(email: string, password: string, nombre?: string): Observable<void> {
+  return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
+    switchMap((userCredential) => {
+      const user = userCredential.user;
+
+      // Construimos el objeto Usuario para Firestore
+      const userData = {
+        uid: user.uid,
+        nombre: nombre || '',
+        email: user.email,
+        fotoURL: user.photoURL || null
+      };
+
+      // Guardamos en Firestore
+      return from(this.firestoreService.setUserData(user, userData));
+    }),
+    tap(() => {
+      this.toastService.showSuccess('Registro exitoso!');
+      this.router.navigate(['/tabs/tabHome']);
+    }),
+    catchError((error) => {
+      this.toastService.showError(this.getFirebaseErrorMessage(error.code));
+      return throwError(() => error);
+    })
+  );
+}
+
+
 
   // Inicio de sesión
   // En auth.service.ts
