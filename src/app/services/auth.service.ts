@@ -11,7 +11,7 @@ export class AuthService {
 */
 //Codigo proporcionado por Chat DeepSeek
 import { Injectable, inject } from '@angular/core';
-import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from '@angular/fire/auth';
+import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, updateEmail, updatePassword } from '@angular/fire/auth';
 import { Observable, BehaviorSubject, from, catchError, map, throwError } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
@@ -93,5 +93,32 @@ login(email: string, password: string): Observable<void> {
       default:
         return 'Error desconocido';
     }
+  }
+  //Para el home
+  // Obtener el usuario actual (sincrónico)
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  // Obtener el usuario actual (asíncrono)
+  getCurrentUserAsync(): Observable<User | null> {
+    return this.currentUserSubject.asObservable();
+  }
+   // Actualizar el correo electrónico del usuario
+  updateEmail(user: User, newEmail: string): Observable<void> {
+    return new Observable(observer => {
+      updateEmail(user, newEmail)
+        .then(() => observer.next())
+        .catch((error) => observer.error(error));
+    });
+  }
+
+  // Actualizar la contraseña del usuario
+  updatePassword(user: User, newPassword: string): Observable<void> {
+    return new Observable(observer => {
+      updatePassword(user, newPassword)
+        .then(() => observer.next())
+        .catch((error) => observer.error(error));
+    });
   }
 }
