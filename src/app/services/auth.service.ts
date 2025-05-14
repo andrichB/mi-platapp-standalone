@@ -11,10 +11,11 @@ export class AuthService {
 */
 //Codigo proporcionado por Chat DeepSeek
 import { Injectable, inject } from '@angular/core';
-import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, authState } from '@angular/fire/auth';
-import { Observable, BehaviorSubject, map, catchError, throwError, from } from 'rxjs';
+import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from '@angular/fire/auth';
+import { Observable, BehaviorSubject, from, catchError, map, throwError } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { Router } from '@angular/router';
-import { ToastService } from './toast.service'; // Servicio opcional para feedback
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root'
@@ -22,49 +23,74 @@ import { ToastService } from './toast.service'; // Servicio opcional para feedba
 export class AuthService {
   private auth = inject(Auth);
   private router = inject(Router);
-  private toastService = inject(ToastService); // Opcional
+  private toastService = inject(ToastService);
+  
   private currentUserSubject = new BehaviorSubject<User | null>(null);
-  currentUser$ = this.currentUserSubject.asObservable();
+  public currentUser$ = this.currentUserSubject.asObservable();
 
   constructor() {
-    onAuthStateChanged(this.auth, (user: User | null) => {
+    // Escucha cambios en el estado de autenticación
+    onAuthStateChanged(this.auth, (user) => {
       this.currentUserSubject.next(user);
     });
   }
 
+  // Registro con email y contraseña
   register(email: string, password: string): Observable<void> {
     return from(createUserWithEmailAndPassword(this.auth, email, password)).pipe(
-      map((userCredential) => {
-        this.router.navigate(['/home']); // Redirige tras registro
-      }),
-      catchError((error) => {
-        this.toastService.showError('Error en registro: ' + error.message); // Feedback visual
-        return throwError(() => error);
-      })
-    );
-  }
-
-  login(email: string, password: string): Observable<void> {
-    return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
       map(() => {
-        this.router.navigate(['/home']); // Redirige tras login
+        this.toastService.showSuccess('Registro exitoso!');
+        this.router.navigate(['/home']);
       }),
       catchError((error) => {
-        this.toastService.showError('Email o contraseña incorrectos'); // Feedback visual
+        this.toastService.showError(this.getFirebaseErrorMessage(error.code));
         return throwError(() => error);
       })
     );
   }
 
+  // Inicio de sesión
+  // En auth.service.ts
+login(email: string, password: string): Observable<void> {
+  return from(signInWithEmailAndPassword(this.auth, email, password)).pipe(
+    tap(() => {
+      this.router.navigate(['/home']);
+    }),
+    map(() => {}), // Convertimos a Observable<void>
+    catchError((error) => {
+      this.toastService.showError(this.getFirebaseErrorMessage(error.code));
+      return throwError(() => error);
+    })
+  );
+}
+
+  // Cierre de sesión
   logout(): Observable<void> {
     return from(signOut(this.auth)).pipe(
       map(() => {
-        this.router.navigate(['/login']); // Redirige tras logout
-      this.currentUserSubject.next(null); // Limpia el estado
-      this.toastService.showSuccess('Sesión cerrada'); // Opcional
-      localStorage.clear(); // Limpia storage si usas datos locales
-      sessionStorage.clear();
+        this.currentUserSubject.next(null);
+        localStorage.clear();
+        this.router.navigate(['/login']);
+        this.toastService.showSuccess('Sesión cerrada correctamente');
       })
     );
+  }
+
+  // Método para traducir códigos de error de Firebase
+  private getFirebaseErrorMessage(code: string): string {
+    switch (code) {
+      case 'auth/email-already-in-use':
+        return 'El email ya está registrado';
+      case 'auth/invalid-email':
+        return 'Email inválido';
+      case 'auth/weak-password':
+        return 'La contraseña es muy débil';
+      case 'auth/user-not-found':
+        return 'Usuario no encontrado';
+      case 'auth/wrong-password':
+        return 'Contraseña incorrecta';
+      default:
+        return 'Error desconocido';
+    }
   }
 }

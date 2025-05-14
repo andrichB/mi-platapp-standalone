@@ -8,6 +8,7 @@ import {
 import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service'; // Asegúrate de que la ruta sea correcta
 import { ToastService } from '../../../services/toast.service'; // Opcional pero recomendado
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -30,23 +31,25 @@ export class LoginPage {
   private router = inject(Router);
   private toastService = inject(ToastService); // Opcional
 
-  async login() {
-    if (!this.email || !this.password) {
-      this.toastService.showError('Por favor, completa todos los campos');
-      return;
-    }
-
-    this.loading = true;
-    try {
-      await this.authService.login(this.email, this.password);
-      this.router.navigate(['/home']); // Redirige al home tras login exitoso
-    } catch (error) {
-      this.toastService.showError('Email o contraseña incorrectos');
-      console.error('Error en login:', error);
-    } finally {
-      this.loading = false;
-    }
+  // En tu login.page.ts
+async login() {
+  if (!this.email || !this.password) {
+    this.toastService.showError('Por favor complete todos los campos');
+    return;
   }
+
+  this.loading = true;
+  
+  try {
+    await firstValueFrom(this.authService.login(this.email, this.password));
+    // La navegación ahora se maneja en el servicio
+  } catch (error) {
+    // Los errores ya los maneja el AuthService
+    console.error('Error en el componente:', error);
+  } finally {
+    this.loading = false;
+  }
+}
 
   goToSignup() {
     this.router.navigate(['/signup']);
