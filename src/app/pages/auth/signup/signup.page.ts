@@ -55,7 +55,7 @@ export class SignupPage {
       return;
     }
 
-    this.authService.register(this.email, this.password).subscribe({
+    this.authService.register(this.email, this.password, this.name).subscribe({
       error: (err) => {
         console.error('Error en registro:', err);
       }
